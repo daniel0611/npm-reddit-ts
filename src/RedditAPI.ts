@@ -1,6 +1,7 @@
 import { CommentsResult } from './types/CommentsResult.type'
 import { ThreadResult } from './types/ThreadsResult.type'
 import Http, { OAuth2Token } from 'httyp'
+import { AxiosError } from 'axios'
 import { Post } from './types/models/Post.type'
 import { JQueryResponse, Token } from './types/RedditAPI.type'
 import { MeResult } from './types/MeResult.type'
@@ -182,7 +183,7 @@ export default class RedditAPI {
   async post(thing_id: string): Promise<Post> {
     return await this.trycatch<Post>(async () => {
       let data = (await Http.url(`https://api.reddit.com/api/info/?id=${thing_id}`).get<SearchResult>()).data.data
-      return map_search(data.children[0])
+      return map_search(data.children[0]!)
     })
   }
 
@@ -205,10 +206,15 @@ export default class RedditAPI {
       return await func()
     } catch (e) {
       if (e instanceof RedditAPIErr.General) throw e
-      else if (e.response?.status === 503 ?? false) Throw(new RedditAPIErr.ServerBusy('Reddit Servers Busy'), e)
-      else if (e.response?.status === 401 ?? false)
-        Throw(new RedditAPIErr.Unauthorized('Unauthorized. Check your credentials'), e)
-      else if (e instanceof TypeError && e.message.match(/Cannot read property .* of null/)) {
+      if (!(e instanceof Error)) throw e;
+      
+      if ((e as AxiosError).response) {
+        if ((e as AxiosError).response?.status === 503 ?? false)
+          Throw(new RedditAPIErr.ServerBusy('Reddit Servers Busy'), e)
+        if ((e as AxiosError).response?.status === 401 ?? false)
+          Throw(new RedditAPIErr.Unauthorized('Unauthorized. Check your credentials'), e)
+      }
+      if (e instanceof TypeError && e.message.match(/Cannot read property .* of null/)) {
         Throw(new RedditAPIErr.Null('Did you forget to initialize RedditAPI Client with O2A or Bearer token?'), e)
       }
       Throw(new RedditAPIErr.General(e.message), e)

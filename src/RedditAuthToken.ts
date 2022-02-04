@@ -50,7 +50,8 @@ export class RedditAuthToken extends OAuth2Token {
       this.tkn = { ...data, ...{ expires_on: Date_.add(data.expires_in * 1000) } }
       console.log('this.tkn', this.tkn)
     } catch (e) {
-      Throw(new Error('Unable to obtain O2A token'), e)
+      const err = e instanceof Error ? e : undefined
+      Throw(new Error('Unable to obtain O2A token'), err)
     }
   }
 

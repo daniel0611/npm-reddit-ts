@@ -76,7 +76,11 @@ describe('RedditAPI', () => {
 
   test('Reply', async () => {
     const results = await Reddit.threads('testingground4bots')
-    await Reddit.reply(results[0].id, `[Jest Test Reply ${new Date().toLocaleString()}] ${USER_AGENT}`)
+    if(results[0]) {
+      await Reddit.reply(results[0].id, `[Jest Test Reply ${new Date().toLocaleString()}] ${USER_AGENT}`)
+    } else {
+      throw new Error('No threads found')
+    }
   })
 
   describe('Search & Delete', () => {
@@ -95,6 +99,9 @@ describe('RedditAPI', () => {
         expect(r.body).not.toBeNull()
         expect(r.author).toEqual(USERNAME)
       })
+      if(!results[0]) {
+        throw new Error('No results found')
+      }
       post = results[0]
     })
     test('Delete', async () => {
